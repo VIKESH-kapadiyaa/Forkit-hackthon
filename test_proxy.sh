@@ -5,7 +5,7 @@
 # PROXY_URL="http://localhost:54321/functions/v1/api-proxy"
 
 # If you are running with 'deno run', you might be on a different port, e.g., 8000
-PROXY_URL="http://localhost:8000/api-proxy"
+PROXY_URL="http://127.0.0.1:8000/api-proxy"
 
 echo "Testing connection to RecipeDB via Proxy at $PROXY_URL..."
 

@@ -45,22 +45,77 @@ export default function FoodScanPage() {
     reader.readAsDataURL(file);
   };
 
-  const analyze = () => {
+  const analyze = async () => {
     setPhase('analyzing'); setProgress(0);
-    const iv = setInterval(() => setProgress(p => { if (p >= 100) { clearInterval(iv); return 100; } return p + Math.random() * 12; }), 350);
-    setTimeout(() => {
-      clearInterval(iv); setProgress(100);
-      const bad = Math.random() > 0.5;
-      setResult({
-        isFood: true, freshness: bad ? 'spoiled' : 'fresh', score: bad ? 23 : 94,
-        ingredients: ['Tomato', 'Red Onion', 'Cucumber', 'Extra Virgin Olive Oil', 'Lemon Zest'],
-        calories: 245, refundApproved: bad, refundAmount: bad ? 189 : 0,
-        notes: bad
-          ? 'Surface discoloration detected on 38% of sample area. Bacterial growth probability: HIGH. Texture deviation: +2.4σ from baseline.'
-          : 'Visual signature matches reference profile at 96.2% confidence. All freshness vectors within optimal range. No anomalies.',
+
+    // Fake progress to keep UI alive during fetch
+    const iv = setInterval(() => setProgress(p => {
+      if (p >= 90) return 90;
+      return p + Math.random() * 8;
+    }), 350);
+
+    try {
+      // Collect evidence
+      const evidencePayload = {
+        orderId: `ORD-${Math.floor(Math.random() * 10000)}`,
+        timestamp: new Date().toISOString(),
+        photoUrls: photos.filter(p => p.status === 'verified').map(p => p.data)
+      };
+
+      const response = await fetch('/api/audit-dish', {
+        method: 'POST',
+        body: JSON.stringify(evidencePayload),
+        headers: { 'Content-Type': 'application/json' }
       });
-      setPhase('result');
-    }, 4000);
+
+      const json = await response.json();
+
+      clearInterval(iv);
+      setProgress(100);
+
+      if (json.status === 'success' || json.isMock) {
+        const d = json.data;
+        setResult({
+          isFood: d.isFood,
+          freshness: d.freshness,
+          score: d.score,
+          ingredients: d.ingredients,
+          calories: d.calories,
+          refundApproved: d.freshness !== 'fresh',
+          refundAmount: d.refundAmount || (d.freshness !== 'fresh' ? 120 : 0),
+          notes: json.message
+        });
+      } else {
+        // Handle explicit failure from backend logic
+        setResult({
+          isFood: true,
+          freshness: 'spoiled',
+          score: 35,
+          ingredients: ['Unidentified'],
+          calories: 0,
+          refundApproved: true,
+          refundAmount: json.refundAmount || 50,
+          notes: json.reason || 'Verification failed. Manual review triggered.'
+        });
+      }
+
+    } catch (e) {
+      console.error("Analysis failed", e);
+      clearInterval(iv);
+      // Fallback in case of network error
+      setResult({
+        isFood: true,
+        freshness: 'caution',
+        score: 50,
+        ingredients: ['Network Error'],
+        calories: 0,
+        refundApproved: false,
+        refundAmount: 0,
+        notes: 'Connection to verification server lost. Please retry.'
+      });
+    }
+
+    setPhase('result');
   };
 
   const reset = () => { setPhase('idle'); setResult(null); };

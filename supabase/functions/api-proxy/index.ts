@@ -1,5 +1,5 @@
 
-const FLAVORDB_BASE = "https://cosylab.iiitd.edu.in/flavordb2"
+const FLAVORDB_BASE = "http://192.168.1.92:9208/flavordb"
 const RECIPEDB_BASE = "http://cosylab.iiitd.edu.in:6969"
 
 Deno.serve(async (req: Request) => {
