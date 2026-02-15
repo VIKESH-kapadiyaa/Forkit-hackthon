@@ -55,6 +55,7 @@ export default function HealthPage() {
             console.error("Failed to load latest scan", e);
         }
 
+        // eslint-disable-next-line
         setHistory(hist);
         setLatestScan(latest);
         setExpanded(exp);
